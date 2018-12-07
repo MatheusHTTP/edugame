@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="pt-br">
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=800, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, minimal-ui, shrink-to-fit=no" />
+
+	<title>Meu Joguinho</title>
+	
+	<style type="text/css">
+		body {
+			background: #000;
+			padding: 0;
+			margin: 0;
+			color: #fff;
+			font: normal 14px sans-serif;
+		}
+
+		/*
+			Esse estilo é para centralizar a tela do jogo no desktop,
+			sem dar um "pulo" no início! :)
+		*/
+		canvas {
+			display: block;
+			margin: 0 auto;
+		}
+	</style>
+</head>
+<body>
+
+	<div id="divJogo"></div>
+
+	<script type="text/javascript" src="phaser.min.js"></script>
+	<script type="text/javascript">
+	//<![CDATA[
+	"use strict";
+
+	// Essa não é a forma mais "prosissional" de fazer, mas é a mais simples :)
+
+	// Vamos chamar a variável de game, para ficar igual ao sandbox!
+	var game = new Phaser.Game(800, 600, Phaser.AUTO, "divJogo");
+        
+	function TelaInicial(game) {
+
+		// A função init() não aparecia no sandbox porque eles fazem ela por nós lá! :)
+		this.init = function () {
+
+			game.input.maxPointers = 1;
+
+			// Deixar o jogo executando, mesmo se o browser mudar de aba?
+			game.stage.disableVisibilityChange = true;
+
+			if (game.device.desktop) {
+				// Configurações específicas para desktop
+
+				// Como criamos o CSS acima, não precisamos centralizar via código
+				game.scale.pageAlignHorizontally = false;
+			} else {
+				// Configurações específicas para celulares
+
+				game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+				// Especifica o tamanho mímino e máximo para a área do jogo (de 400x300 até 800x600)
+				game.scale.setMinMax(400, 300, 800, 600);
+				game.scale.forceLandscape = true;
+				// Como criamos o CSS acima, não precisamos centralizar via código
+				game.scale.pageAlignHorizontally = false;
+			}
+
+		}
+
+		this.preload = function () {
+			game.load.baseURL = "";
+	game.load.crossOrigin = "anonymous";
+
+	game.load.spritesheet("player", "http://examples.phaser.io/assets/games/starstruck/dude.png", 32, 48);
+	game.load.image("background", "fundo.png");
+	game.load.image("platform", "http://examples.phaser.io/assets/sprites/platform.png");
+            game.load.image("bola", "bola.png");
+
+		}
+		
+		var player;
+
+        var bola0, bola1, bola2, bola3, bola4, bola5, bola6;
+        var jaAtravessou = false, jaApertou = false;
+        var gravidade = 2000, vx = 0, vy = 0;
+        var px = 10, py = 500, fx = 110, t0;
+
+		this.create = function () {
+            game.add.tileSprite(0, 0, 800, 600, "background");
+
+            player = game.add.sprite(px, py, "player");
+            bola0 = game.add.sprite(0, 0, "bola");
+            bola1 = game.add.sprite(0, 0, "bola");
+            bola2 = game.add.sprite(0, 0, "bola");
+            bola3 = game.add.sprite(0, 0, "bola");
+            bola4 = game.add.sprite(0, 0, "bola");
+            bola5 = game.add.sprite(0, 0, "bola");
+            bola6 = game.add.sprite(0, 0, "bola");
+            bola0.visible = false;
+            bola1.visible = false;
+            bola2.visible = false;
+            bola3.visible = false;
+            bola4.visible = false;
+            bola5.visible = false;
+            bola6.visible = false;
+
+            game.physics.arcade.enable(player);
+
+            player.body.collideWorldBounds = true;
+            player.body.bounce.x = 0.4;
+            player.body.bounce.y = 0.4;
+
+            player.animations.add("esquerda", [0, 1, 2, 3], 12, true);
+            player.animations.add("parado", [4], 1, true);
+            player.animations.add("direita", [5, 6, 7, 8], 12, true);
+            player.animations.play("parado");
+		}
+
+		this.update = function () {
+			    if (jaAtravessou === true) {
+        
+					if (player.body.onFloor()) {
+						jaAtravessou = false;
+						jaApertou = false;
+						player.body.velocity.x = 0;
+						player.body.velocity.y = 0;
+						player.body.gravity.y = 0;
+						player.body.position.x = px;
+						player.body.position.y = py;
+					}
+					return;
+				}
+				
+				var x = game.input.mousePointer.x,
+					y = game.input.mousePointer.y;
+
+				if (jaApertou === false) {
+					
+					if (game.input.mousePointer.isDown &&
+						x >= px &&
+						x <= (px + 32) &&
+						y >= py &&
+						y <= (py + 48)
+					
+					) {
+						jaApertou = true;
+						t0 = game.time.now / 1000;
+					} else {
+						return;
+					}
+				}
+
+				player.body.position.x = x - 16;
+				player.body.position.y = y - 24;
+				
+				if (x >= fx) {
+					jaAtravessou = true;
+					var t1 = game.time.now / 1000;
+					var dt = t1 - t0;
+					var dx = fx - px;
+					var dy = y - py;
+					var v = Math.sqrt((dx * dx) + (dy * dy)) / dt;
+					var theta = Math.atan(dy / dx);
+					var vx = v * Math.cos(theta);
+					var vy = v * Math.sin(theta);
+					player.body.velocity.x = vx;
+					player.body.velocity.y = vy;
+					player.body.gravity.y = 2000;
+				}
+
+		}
+	}
+
+	// Os estados do jogo podem ser entendidos como "telas" ou "cenários"
+	// Se nosso jogo tivesse mais de uma "tela", bastaria adicionar as telas aqui,
+	// dando nomes para cada uma (para alternar entre uma tela e outra, bastaria
+	// executar jogo.state.start("Nome da tela") a qualquer momento)
+	game.state.add("TelaInicial", TelaInicial);
+	game.state.start("TelaInicial");
+
+	//]]>
+	</script>
+</body>
+</html>
